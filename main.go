@@ -2,33 +2,40 @@ package main
 
 import (
 	"log"
+	//"math/big"
+	"time"
 
-	conf "filip/WeatherStationREST/Config"
-
-	"github.com/maxwellhealth/bongo"
-	//coll "filip/WeatherStationREST/Models/Collection"
-	//temp "filip/WeatherStationREST/Models/Temperature"
+	temp "filip/WeatherStationREST/Models/Temperature"
 )
 
 func main() {
-	/*var collectionObject coll.Collection = coll.Collection{
-		Temperatures: temp.Temperatures{
-			1481720663: 13,
-			1481720664: 13.123,
-		},
+	/*var obj temp.Temperature = temp.Temperature{
+		Timestamp: time.Unix(time.Now().Unix(), 0),
+		Value:     big.NewFloat(13.123),
 	}
 
-	// Szyfrowanie
-	log.Printf("Przed szyfrowaniem %T %+v\n\n", collectionObject, collectionObject)
-	encryptedCollectionObject, err := collectionObject.Encrypt()
-	if err != nil {
-		panic(err)
-	}
+	var i int64
+	for i = 1; i <= 100; i++ {
+		obj = temp.Temperature{
+			Timestamp: time.Unix(obj.Timestamp.Unix()+i, 0),
+			Value:     big.NewFloat(13.123),
+		}
 
-	// Deszyfrowanie
-	newObj, err := coll.CreateFromEncryptedByteList(encryptedCollectionObject)
-	if err != nil {
-		log.Println(err.Error())
+		t0 := time.Now()
+		err := obj.Save()
+		if err != nil {
+			log.Println(err.Error())
+		} else {
+			log.Printf("Object %d saved in %d ms\n", i, (time.Now().Sub(t0).Nanoseconds() / 1e6))
+		}
+	}*/
+
+	obj := new(temp.Temperatures)
+
+	obj.Find(time.Date(2016, time.December, 23, 8, 0, 0, 0, time.Now().Location()), time.Now())
+
+	for _, one := range *obj {
+		log.Printf("%T %+v\n", one.Timestamp, one.Timestamp)
+		log.Printf("%T %+v\n", one.Value, one.Value)
 	}
-	log.Printf("Po deszyfrowaniu %T %+v\n\n", *newObj, *newObj)*/
 }

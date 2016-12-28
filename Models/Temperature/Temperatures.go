@@ -1,49 +1,36 @@
 package Temperature
 
 import (
-	"encoding/json"
+	"time"
 
-	util "filip/WeatherStationREST/Utilities"
+	conf "filip/WeatherStationREST/Config"
+	db "filip/WeatherStationREST/DbConnection/Mongo"
+	"gopkg.in/mgo.v2/bson"
 )
 
-type Temperatures map[int64]Temperature
+type Temperatures []Temperature
 
-func CreateFromEncryptedByteList(data []byte) (*Temperatures, error) {
-	decrypted, err := util.Decrypt(data)
+func (list *Temperatures) Append(object Temperature) {
+	*list = append(*list, object)
+}
+
+func (list *Temperatures) Find(startTime, stopTime time.Time) error {
+	connection, err := db.GetConnection()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	var newObject Temperatures
-	if err = json.Unmarshal(decrypted, &newObject); err != nil {
-		return nil, err
+	results := connection.Collection(conf.GetTemperatureCollectionName()).Find(
+		bson.M{
+			"timestamp": bson.M{
+				"$gte": startTime.Unix(),
+				"$lte": stopTime.Unix(),
+			}})
+
+	var temp Temperature
+	for results.Next(&temp) {
+		list.Append(temp)
 	}
 
-	return &newObject, nil
-}
-
-func (t *Temperatures) Encrypt() ([]byte, error) {
-	return util.Encrypt(*t)
-}
-
-func (t Temperatures) GetAsByteList() ([]byte, error) {
-	plainJsonByte, _ := json.Marshal(t)
-
-	return plainJsonByte, nil
-}
-
-func (list *Temperatures) Append(objects map[int64]Temperature) {
-	for timestamp, temp := range objects {
-		(*list)[timestamp] = temp
-	}
-}
-
-func (list *Temperatures) AppendNew(timestamp int64, celcius float32) {
-	var temp Temperature = Temperature(celcius)
-
-	var objects map[int64]Temperature = map[int64]Temperature{
-		timestamp: temp,
-	}
-
-	list.Append(objects)
+	return nil
 }
