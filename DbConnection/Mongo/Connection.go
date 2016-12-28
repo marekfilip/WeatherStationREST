@@ -2,6 +2,7 @@ package Mongo
 
 import (
 	conf "filip/WeatherStationREST/Config"
+
 	"github.com/maxwellhealth/bongo"
 )
 
