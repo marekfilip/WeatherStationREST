@@ -34,3 +34,15 @@ func (list *Temperatures) Find(startTime, stopTime time.Time) error {
 
 	return nil
 }
+
+func (list Temperatures) Len() int {
+	return len(list)
+}
+
+func (list Temperatures) Less(i, j int) bool {
+	return list[i].Timestamp.Before(list[j].Timestamp)
+}
+
+func (list Temperatures) Swap(i, j int) {
+	list[i], list[j] = list[j], list[i]
+}

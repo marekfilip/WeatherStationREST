@@ -9,7 +9,7 @@ var instance *bongo.Connection = nil
 
 func GetConnection() (*bongo.Connection, error) {
 	if instance == nil {
-		newInstance, err := bongo.Connect(conf.GetMongoConfig())
+		newInstance, err := bongo.Connect(conf.GetBongoConfig())
 		if err != nil {
 			return nil, err
 		}
