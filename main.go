@@ -2,40 +2,40 @@ package main
 
 import (
 	"log"
-	//"math/big"
 	"time"
 
-	temp "filip/WeatherStationREST/Models/Temperature"
+	"filip/WeatherStationREST/Models/Composition"
+	"filip/WeatherStationREST/REST"
+	"filip/WeatherStationREST/SerialRead"
 )
 
 func main() {
-	/*var obj temp.Temperature = temp.Temperature{
-		Timestamp: time.Unix(time.Now().Unix(), 0),
-		Value:     big.NewFloat(13.123),
+	var device *SerialRead.SerialRead = SerialRead.Init()
+	var rest *REST.WeatherStationREST
+	var err error
+
+	go func() {
+		for {
+			data := device.GetData()
+			if err != nil {
+				log.Fatal(err.Error())
+			}
+
+			composition, err := Composition.GetCompositionFromSerialData(data)
+			if err != nil {
+				log.Fatal(err.Error())
+				return
+			}
+
+			composition.SaveAll()
+			<-time.After(time.Duration(2) * time.Minute)
+		}
+	}()
+
+	rest, err = REST.New(REST.DevStack)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
-	var i int64
-	for i = 1; i <= 100; i++ {
-		obj = temp.Temperature{
-			Timestamp: time.Unix(obj.Timestamp.Unix()+i, 0),
-			Value:     big.NewFloat(13.123),
-		}
-
-		t0 := time.Now()
-		err := obj.Save()
-		if err != nil {
-			log.Println(err.Error())
-		} else {
-			log.Printf("Object %d saved in %d ms\n", i, (time.Now().Sub(t0).Nanoseconds() / 1e6))
-		}
-	}*/
-
-	obj := new(temp.Temperatures)
-
-	obj.Find(time.Date(2016, time.December, 23, 8, 0, 0, 0, time.Now().Location()), time.Now())
-
-	for _, one := range *obj {
-		log.Printf("%T %+v\n", one.Timestamp, one.Timestamp)
-		log.Printf("%T %+v\n", one.Value, one.Value)
-	}
+	rest.Start()
 }

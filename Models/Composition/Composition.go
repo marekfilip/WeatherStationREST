@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 
 	conf "filip/WeatherStationREST/Config"
@@ -14,7 +15,27 @@ import (
 )
 
 type Composition struct {
-	Temperature temp.Temperature `json:"temperature"`
+	Temperature *temp.Temperature `json:"temperature"`
+}
+
+func GetCompositionFromSerialData(data map[string]string) (*Composition, error) {
+	if _, ok := data["T"]; !ok {
+		return nil, fmt.Errorf("No temperature data '%+v'", data)
+	}
+
+	if _, ok := data["B"]; !ok {
+		return nil, fmt.Errorf("No brightness data '%+v'", data)
+	}
+
+	newTemperature, err := temp.New(data["T"])
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Composition{
+		Temperature: newTemperature,
+	}, nil
 }
 
 func CreateFromEncryptedBytes(data []byte) (*Composition, error) {
@@ -26,6 +47,12 @@ func CreateFromEncryptedBytes(data []byte) (*Composition, error) {
 	}
 
 	return &newObject, nil
+}
+
+func (c *Composition) SaveAll() {
+	go func(cs *Composition) {
+		_ = cs.Temperature.Save()
+	}(c)
 }
 
 func (c *Composition) Encrypt() ([]byte, error) {

@@ -12,12 +12,27 @@ import (
 )
 
 type Temperature struct {
-	Id        bson.ObjectId
-	Created   time.Time
-	Modified  time.Time
+	Id       bson.ObjectId
+	Created  time.Time
+	Modified time.Time
+
 	Timestamp time.Time
 	Value     *big.Float
-	exists    bool
+
+	exists bool
+}
+
+func New(stringValue string) (*Temperature, error) {
+	floatValue, _, err := big.ParseFloat(stringValue, 10, 0, big.ToNearestEven)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &Temperature{
+		Timestamp: time.Now(),
+		Value:     floatValue,
+	}, nil
 }
 
 func (t *Temperature) Save() error {
@@ -53,15 +68,9 @@ func (t *Temperature) MarshalJSON() ([]byte, error) {
 	value, _ := t.Value.Float64()
 
 	return json.Marshal(&struct {
-		Id        bson.ObjectId `json:"_id"`
-		Created   int64         `json:"_created"`
-		Modified  int64         `json:"_modified"`
-		Timestamp int64         `json:"timestamp"`
-		Value     float64       `json:"value"`
+		Timestamp int64   `json:"timestamp"`
+		Value     float64 `json:"value"`
 	}{
-		Id:        t.GetId(),
-		Created:   t.Created.Unix(),
-		Modified:  t.Modified.Unix(),
 		Timestamp: t.Timestamp.Unix(),
 		Value:     value,
 	})
@@ -70,11 +79,8 @@ func (t *Temperature) MarshalJSON() ([]byte, error) {
 // Implements json.Unmarshaler
 func (t *Temperature) UnmarshalJSON(data []byte) error {
 	var temporaryObject struct {
-		Id        bson.ObjectId `json:"_id"`
-		Created   int64         `json:"_created"`
-		Modified  int64         `json:"_modified"`
-		Timestamp int64         `json:"timestamp"`
-		Value     float64       `json:"value"`
+		Timestamp int64   `json:"timestamp"`
+		Value     float64 `json:"value"`
 	}
 
 	err := json.Unmarshal(data, &temporaryObject)
@@ -83,9 +89,6 @@ func (t *Temperature) UnmarshalJSON(data []byte) error {
 	}
 
 	*t = Temperature{
-		Id:        temporaryObject.Id,
-		Created:   time.Unix(temporaryObject.Created, 0),
-		Modified:  time.Unix(temporaryObject.Modified, 0),
 		Timestamp: time.Unix(temporaryObject.Timestamp, 0),
 		Value:     big.NewFloat(temporaryObject.Value),
 	}

@@ -15,7 +15,7 @@ func TestCreateComposition(t *testing.T) {
 
 	for index, c := range compositionTestCases {
 		compositionTestCases[index].object = &Composition{
-			Temperature: temp.Temperature{
+			Temperature: &temp.Temperature{
 				Timestamp: time.Unix(c.timestamp, 0),
 				Value:     big.NewFloat(c.temperature),
 			},
