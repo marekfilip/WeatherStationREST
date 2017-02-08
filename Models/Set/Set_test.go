@@ -1,4 +1,4 @@
-package Composition
+package Set
 
 import (
 	"math/big"
@@ -14,7 +14,7 @@ func TestCreateComposition(t *testing.T) {
 	var value float64
 
 	for index, c := range compositionTestCases {
-		compositionTestCases[index].object = &Composition{
+		compositionTestCases[index].object = &Set{
 			Temperature: &temp.Temperature{
 				Timestamp: time.Unix(c.timestamp, 0),
 				Value:     big.NewFloat(c.temperature),
@@ -50,7 +50,7 @@ func TestEncrypt(t *testing.T) {
 }
 
 func TestDecrypt(t *testing.T) {
-	var tempComposition *Composition
+	var tempComposition *Set
 	var err error
 
 	for index, c := range compositionTestCases {

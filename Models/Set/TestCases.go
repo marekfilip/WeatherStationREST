@@ -1,15 +1,15 @@
-package Composition
+package Set
 
 func getTestCases() []struct {
 	temperature float64
 	timestamp   int64
-	object      *Composition
+	object      *Set
 	encrypted   []byte
 } {
 	return []struct {
 		temperature float64
 		timestamp   int64
-		object      *Composition
+		object      *Set
 		encrypted   []byte
 	}{
 		{temperature: -2.123, timestamp: 1482192000}, // Wed, 20 Dec 2016 00:00:00 GMT

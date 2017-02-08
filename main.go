@@ -4,7 +4,7 @@ import (
 	"log"
 	"time"
 
-	"filip/WeatherStationREST/Models/Composition"
+	"filip/WeatherStationREST/Models/Set"
 	"filip/WeatherStationREST/REST"
 	"filip/WeatherStationREST/SerialRead"
 )
@@ -21,7 +21,7 @@ func main() {
 				log.Fatal(err.Error())
 			}
 
-			composition, err := Composition.GetCompositionFromSerialData(data)
+			composition, err := Set.GetCompositionFromSerialData(data)
 			if err != nil {
 				log.Fatal(err.Error())
 				return

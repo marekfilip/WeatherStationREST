@@ -4,13 +4,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	compModel "filip/WeatherStationREST/Models/Composition"
+	compModel "filip/WeatherStationREST/Models/Set"
 
 	"github.com/ant0ine/go-json-rest/rest"
 )
 
 func PutComposition(w rest.ResponseWriter, req *rest.Request) {
-	var composition *compModel.Composition
+	var composition *compModel.Set
 
 	body, err := ioutil.ReadAll(req.Body)
 	if err != nil {

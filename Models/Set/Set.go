@@ -1,4 +1,4 @@
-package Composition
+package Set
 
 import (
 	"crypto/aes"
@@ -14,11 +14,11 @@ import (
 	temp "filip/WeatherStationREST/Models/Temperature"
 )
 
-type Composition struct {
+type Set struct {
 	Temperature *temp.Temperature `json:"temperature"`
 }
 
-func GetCompositionFromSerialData(data map[string]string) (*Composition, error) {
+func GetCompositionFromSerialData(data map[string]string) (*Set, error) {
 	if _, ok := data["T"]; !ok {
 		return nil, fmt.Errorf("No temperature data '%+v'", data)
 	}
@@ -33,13 +33,13 @@ func GetCompositionFromSerialData(data map[string]string) (*Composition, error) 
 		return nil, err
 	}
 
-	return &Composition{
+	return &Set{
 		Temperature: newTemperature,
 	}, nil
 }
 
-func CreateFromEncryptedBytes(data []byte) (*Composition, error) {
-	var newObject Composition
+func CreateFromEncryptedBytes(data []byte) (*Set, error) {
+	var newObject Set
 
 	err := newObject.decryptTo(data)
 	if err != nil {
@@ -49,13 +49,13 @@ func CreateFromEncryptedBytes(data []byte) (*Composition, error) {
 	return &newObject, nil
 }
 
-func (c *Composition) SaveAll() {
-	go func(cs *Composition) {
+func (c *Set) SaveAll() {
+	go func(cs *Set) {
 		_ = cs.Temperature.Save()
 	}(c)
 }
 
-func (c *Composition) Encrypt() ([]byte, error) {
+func (c *Set) Encrypt() ([]byte, error) {
 	data, err := json.Marshal(&c)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (c *Composition) Encrypt() ([]byte, error) {
 	return ciphertext, nil
 }
 
-func (c *Composition) decryptTo(data []byte) error {
+func (c *Set) decryptTo(data []byte) error {
 	block, err := aes.NewCipher(conf.GetSecret())
 	if err != nil {
 		return err
