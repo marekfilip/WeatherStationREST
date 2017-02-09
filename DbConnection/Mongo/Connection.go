@@ -8,14 +8,11 @@ import (
 
 var instance *bongo.Connection = nil
 
-func GetConnection() (*bongo.Connection, error) {
+func GetConnection() *bongo.Connection {
 	if instance == nil {
-		newInstance, err := bongo.Connect(conf.GetBongoConfig())
-		if err != nil {
-			return nil, err
-		}
+		newInstance, _ := bongo.Connect(conf.GetBongoConfig())
 		instance = newInstance
 	}
 
-	return instance, nil
+	return instance
 }

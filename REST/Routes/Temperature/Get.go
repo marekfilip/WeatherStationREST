@@ -1,5 +1,6 @@
 package Temperature
 
+/*
 import (
 	"net/http"
 	"time"
@@ -34,4 +35,4 @@ func JsonResponse(w rest.ResponseWriter, req *rest.Request) {
 	}
 
 	w.WriteJson(requestedTemperatures)
-}
+}*/

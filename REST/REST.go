@@ -6,8 +6,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"filip/WeatherStationREST/REST/Routes/Staff"
-	"filip/WeatherStationREST/REST/Routes/Temperature"
+	//"filip/WeatherStationREST/REST/Routes/Temperature"
 
 	"github.com/ant0ine/go-json-rest/rest"
 )
@@ -105,7 +104,6 @@ func getDefaultProdMiddlewares() []rest.Middleware {
 
 func getRouter() (rest.App, error) {
 	return rest.MakeRouter(
-		rest.Get("/temperature/get/#from/#to", Temperature.JsonResponse),
-		rest.Put("/staff/add", Staff.PutComposition),
+	//rest.Get("/temperature/get/#from/#to", Temperature.JsonResponse),
 	)
 }

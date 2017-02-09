@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"os"
 	"time"
 
 	"filip/WeatherStationREST/Models/Set"
@@ -9,7 +10,11 @@ import (
 	"filip/WeatherStationREST/SerialRead"
 )
 
+var environment string = os.Getenv("WEATHER_STATION_ENV")
+
 func main() {
+	checkIsEnvironmentSet()
+
 	var device *SerialRead.SerialRead = SerialRead.Init()
 	var rest *REST.WeatherStationREST
 	var err error
@@ -21,13 +26,13 @@ func main() {
 				log.Fatal(err.Error())
 			}
 
-			composition, err := Set.GetCompositionFromSerialData(data)
+			composition, err := Set.NewFromMap(data)
 			if err != nil {
 				log.Fatal(err.Error())
 				return
 			}
 
-			composition.SaveAll()
+			composition.Save()
 			<-time.After(time.Duration(2) * time.Minute)
 		}
 	}()
@@ -38,4 +43,11 @@ func main() {
 	}
 
 	rest.Start()
+}
+
+func checkIsEnvironmentSet() {
+	if environment == "" {
+		log.Println("Set environment in WEATHER_STATION_ENV")
+		os.Exit(1)
+	}
 }

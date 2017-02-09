@@ -1,5 +1,6 @@
 package Brightness
 
+/*
 import (
 	"net/http"
 	"time"
@@ -35,3 +36,4 @@ func JsonResponse(w rest.ResponseWriter, req *rest.Request) {
 
 	w.WriteJson(requestedBrightnessSet)
 }
+*/

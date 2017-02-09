@@ -1,24 +1,30 @@
 package Set
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
+	"math/big"
+	"time"
 
 	conf "filip/WeatherStationREST/Config"
-	temp "filip/WeatherStationREST/Models/Temperature"
+	db "filip/WeatherStationREST/DbConnection/Mongo"
+	"gopkg.in/mgo.v2/bson"
+
+	"filip/WeatherStationREST/Models/Brightness"
+	"filip/WeatherStationREST/Models/Temperature"
 )
 
 type Set struct {
-	Temperature *temp.Temperature `json:"temperature"`
+	Id       bson.ObjectId
+	Created  time.Time
+	Modified time.Time
+	exists   bool
+
+	Brightness  *Brightness.Brightness   `json:"brightness"`
+	Temperature *Temperature.Temperature `json:"temperature"`
 }
 
-func GetCompositionFromSerialData(data map[string]string) (*Set, error) {
+func NewFromMap(data map[string]string) (*Set, error) {
 	if _, ok := data["T"]; !ok {
 		return nil, fmt.Errorf("No temperature data '%+v'", data)
 	}
@@ -27,82 +33,153 @@ func GetCompositionFromSerialData(data map[string]string) (*Set, error) {
 		return nil, fmt.Errorf("No brightness data '%+v'", data)
 	}
 
-	newTemperature, err := temp.New(data["T"])
+	return ParseStrings(data["T"], data["B"])
+}
 
+func ParseStrings(t, b string) (*Set, error) {
+	newTemperature, err := Temperature.ParseString(t)
 	if err != nil {
 		return nil, err
 	}
 
+	newBrightness, err := Brightness.ParseString(b)
+	if err != nil {
+		return nil, err
+	}
+
+	return New(newTemperature, newBrightness), nil
+}
+
+func New(t *Temperature.Temperature, b *Brightness.Brightness) *Set {
 	return &Set{
-		Temperature: newTemperature,
-	}, nil
+		Temperature: t,
+		Brightness:  b,
+	}
 }
 
-func CreateFromEncryptedBytes(data []byte) (*Set, error) {
-	var newObject Set
-
-	err := newObject.decryptTo(data)
+func (s *Set) Save() error {
+	var err error = db.GetConnection().Collection(conf.GetSetCollectionName()).Save(s)
 	if err != nil {
-		return nil, err
-	}
-
-	return &newObject, nil
-}
-
-func (c *Set) SaveAll() {
-	go func(cs *Set) {
-		_ = cs.Temperature.Save()
-	}(c)
-}
-
-func (c *Set) Encrypt() ([]byte, error) {
-	data, err := json.Marshal(&c)
-	if err != nil {
-		return nil, err
-	}
-
-	block, err := aes.NewCipher(conf.GetSecret())
-	if err != nil {
-		return nil, err
-	}
-
-	b := base64.StdEncoding.EncodeToString(data)
-	ciphertext := make([]byte, aes.BlockSize+len(b))
-	iv := ciphertext[:aes.BlockSize]
-
-	if _, err := io.ReadFull(rand.Reader, iv); err != nil {
-		return nil, err
-	}
-
-	cfb := cipher.NewCFBEncrypter(block, iv)
-	cfb.XORKeyStream(ciphertext[aes.BlockSize:], []byte(b))
-
-	return ciphertext, nil
-}
-
-func (c *Set) decryptTo(data []byte) error {
-	block, err := aes.NewCipher(conf.GetSecret())
-	if err != nil {
-		return err
-	}
-
-	if len(data) < aes.BlockSize {
-		return errors.New("Ciphertext too short")
-	}
-
-	iv := data[:aes.BlockSize]
-	data = data[aes.BlockSize:]
-	cfb := cipher.NewCFBDecrypter(block, iv)
-	cfb.XORKeyStream(data, data)
-	decodedString, err := base64.StdEncoding.DecodeString(string(data))
-
-	if err != nil {
-		return err
-	}
-
-	if err = json.Unmarshal(decodedString, c); err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (s *Set) Delete() error {
+	var err error = db.GetConnection().Collection(conf.GetSetCollectionName()).DeleteDocument(s)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Implements json.Marshaler
+func (s Set) MarshalJSON() ([]byte, error) {
+	temperature, _ := s.Temperature.Float64()
+	return json.Marshal(&struct {
+		Timestamp   int64   `json:"timestamp"`
+		Brightness  uint16  `json:"brightness"`
+		Temperature float64 `json:"temperature"`
+	}{
+		Timestamp:   s.Created.Unix(),
+		Brightness:  uint16(*s.Brightness),
+		Temperature: temperature,
+	})
+}
+
+func (s *Set) UnmarshalJSON(data []byte) error {
+	var decoded struct {
+		Timestamp   int64   `json:"timestamp"`
+		Brightness  uint16  `json:"brightness"`
+		Temperature float64 `json:"temperature"`
+	}
+
+	err := json.Unmarshal(data, &decoded)
+	if err != nil {
+		return err
+	}
+
+	*s = Set{
+		Created:     time.Unix(decoded.Timestamp, 0),
+		Brightness:  Brightness.NewBrightness(decoded.Brightness),
+		Temperature: Temperature.NewTemperature(decoded.Temperature),
+	}
+
+	return nil
+}
+
+// Satisfy the bson.Getter
+func (s Set) GetBSON() (interface{}, error) {
+	temperature, _ := s.Temperature.Float64()
+
+	return struct {
+		Id          bson.ObjectId `bson:"_id,omitempty"`
+		Created     int64         `bson:"_created"`
+		Modified    int64         `bson:"_modified"`
+		Brightness  uint16        `json:"brightness"`
+		Temperature float64       `json:"temperature"`
+	}{
+		Id:          s.GetId(),
+		Created:     s.Created.Unix(),
+		Modified:    s.Modified.Unix(),
+		Brightness:  uint16(*s.Brightness),
+		Temperature: temperature,
+	}, nil
+}
+
+// Satisfy the bson.Setter
+func (s *Set) SetBSON(raw bson.Raw) error {
+	decoded := new(struct {
+		Id          bson.ObjectId `bson:"_id,omitempty"`
+		Created     int64         `bson:"_created"`
+		Modified    int64         `bson:"_modified"`
+		Brightness  uint16        `json:"brightness"`
+		Temperature float64       `json:"temperature"`
+	})
+
+	bsonErr := raw.Unmarshal(decoded)
+	if bsonErr == nil {
+		brightness := Brightness.Brightness(decoded.Brightness)
+		temperature := Temperature.Temperature(*big.NewFloat(decoded.Temperature))
+
+		*s = Set{
+			Id:          decoded.Id,
+			Created:     time.Unix(decoded.Created, 0),
+			Modified:    time.Unix(decoded.Modified, 0),
+			Brightness:  &brightness,
+			Temperature: &temperature,
+		}
+		return nil
+	}
+
+	return bsonErr
+}
+
+// Satisfy the bongo.NewTracker
+func (s *Set) SetIsNew(isNew bool) {
+	s.exists = !isNew
+}
+
+func (s *Set) IsNew() bool {
+	return !s.exists
+}
+
+// Satisfy the bongo.Document
+func (s *Set) GetId() bson.ObjectId {
+	return s.Id
+}
+
+func (s *Set) SetId(id bson.ObjectId) {
+	s.Id = id
+}
+
+// Satisfy the bongo.TimeTracker
+func (s *Set) SetCreated(ts time.Time) {
+	s.Created = ts
+}
+
+func (s *Set) SetModified(ts time.Time) {
+	s.Modified = ts
 }
