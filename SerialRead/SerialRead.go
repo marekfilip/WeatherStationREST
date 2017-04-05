@@ -2,6 +2,7 @@ package SerialRead
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -52,10 +53,10 @@ func Init() *SerialRead {
 	}...)
 
 	err = sttyCommand.Run()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	sr.deviceFile, err = os.OpenFile(sr.devicePath, syscall.O_RDWR|syscall.O_NOCTTY|syscall.O_NONBLOCK, 0666)
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	t := syscall.Termios{
 		Iflag:  syscall.IGNPAR,
@@ -83,16 +84,19 @@ func (sr *SerialRead) getUSBSerialDevice() string {
 	var dmesgCmd *exec.Cmd = exec.Command("dmesg")
 	var grepCmd *exec.Cmd = exec.Command("grep", "ttyUSB")
 
+	var test bool
+
 	grepCmd.Stdin, err = dmesgCmd.StdoutPipe()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	grepCmdReader, err = grepCmd.StdoutPipe()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	scanner := bufio.NewScanner(grepCmdReader)
 	go func() {
 		for scanner.Scan() {
 			scannedText = scanner.Text()
+			test, _ = regexp.MatchString(pattern, scannedText)
 			if match, _ := regexp.MatchString(pattern, scannedText); match {
 				deviceName = re.FindStringSubmatch(scanner.Text())[1]
 			}
@@ -101,44 +105,58 @@ func (sr *SerialRead) getUSBSerialDevice() string {
 	}()
 
 	err = grepCmd.Start()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	err = dmesgCmd.Run()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	err = grepCmd.Wait()
-	sr.catchErrorCustomeMsgAndExit(err)
+	sr.catchErrorAndExit(err)
 
 	<-done
 	return deviceName
 }
 
-func (sr *SerialRead) catchErrorAndExit(msg string, err error) {
+func (sr *SerialRead) catchErrorAndExitCustomMessage(msg string, err error) {
 	if err != nil {
+		log.SetOutput(os.Stderr)
 		log.Println(msg)
 		log.Println(err.Error())
 		os.Exit(1)
 	}
 }
 
-func (sr *SerialRead) catchErrorCustomeMsgAndExit(err error) {
-	sr.catchErrorAndExit("Could not start. Is device connected?", err)
+func (sr *SerialRead) catchErrorAndExit(err error) {
+	sr.catchErrorAndExitCustomMessage("Could not start. Is device connected?", err)
 }
 
-func (sr *SerialRead) GetData() map[string]string {
-	var data string = string(sr.readData())
-	var splitedData = strings.Split(data, ";")
+func (sr *SerialRead) GetData() (map[string]string, error) {
 	var output map[string]string = map[string]string{}
 
-	for _, value := range splitedData {
-		tmp := strings.Split(strings.TrimSpace(value), ":")
+	tries := 0
+	for {
+		var data string = string(sr.readData())
+		var splitedData = strings.Split(data, ";")
 
-		if len(tmp) == 2 {
-			output[tmp[0]] = tmp[1]
+		for _, value := range splitedData {
+			tmp := strings.Split(strings.TrimSpace(value), ":")
+
+			if len(tmp) == 2 {
+				output[tmp[0]] = tmp[1]
+			}
+		}
+
+		if output["T"] != "-273.15" && output["B"] != "" {
+			break
+		}
+
+		tries++
+		if tries >= 3 {
+			return nil, fmt.Errorf("Tries count too hi")
 		}
 	}
 
-	return output
+	return output, nil
 }
 
 func (sr *SerialRead) sendSignal() {
@@ -150,7 +168,7 @@ func (sr *SerialRead) sendSignal() {
 		bytesSend, err = sr.deviceFile.Write([]byte("a"))
 
 		if err != nil {
-			sr.catchErrorAndExit("Could not send signal.", err)
+			sr.catchErrorAndExitCustomMessage("Could not send signal.", err)
 		}
 		sr.Unlock()
 	}

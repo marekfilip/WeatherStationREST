@@ -6,10 +6,9 @@ import (
 	"math/big"
 	"time"
 
-	conf "filip/WeatherStationREST/Config"
-	db "filip/WeatherStationREST/DbConnection/Mongo"
 	"gopkg.in/mgo.v2/bson"
 
+	db "filip/WeatherStationREST/DbConnection/Mongo"
 	"filip/WeatherStationREST/Models/Brightness"
 	"filip/WeatherStationREST/Models/Temperature"
 )
@@ -20,8 +19,8 @@ type Set struct {
 	Modified time.Time
 	exists   bool
 
-	Brightness  *Brightness.Brightness   `json:"brightness"`
-	Temperature *Temperature.Temperature `json:"temperature"`
+	Brightness  *Brightness.Brightness
+	Temperature *Temperature.Temperature
 }
 
 func NewFromMap(data map[string]string) (*Set, error) {
@@ -47,10 +46,10 @@ func ParseStrings(t, b string) (*Set, error) {
 		return nil, err
 	}
 
-	return New(newTemperature, newBrightness), nil
+	return NewSet(newTemperature, newBrightness), nil
 }
 
-func New(t *Temperature.Temperature, b *Brightness.Brightness) *Set {
+func NewSet(t *Temperature.Temperature, b *Brightness.Brightness) *Set {
 	return &Set{
 		Temperature: t,
 		Brightness:  b,
@@ -58,7 +57,7 @@ func New(t *Temperature.Temperature, b *Brightness.Brightness) *Set {
 }
 
 func (s *Set) Save() error {
-	var err error = db.GetConnection().Collection(conf.GetSetCollectionName()).Save(s)
+	var err error = db.GetSetCollection().Save(s)
 	if err != nil {
 		return err
 	}
@@ -67,7 +66,7 @@ func (s *Set) Save() error {
 }
 
 func (s *Set) Delete() error {
-	var err error = db.GetConnection().Collection(conf.GetSetCollectionName()).DeleteDocument(s)
+	var err error = db.GetSetCollection().DeleteDocument(s)
 	if err != nil {
 		return err
 	}

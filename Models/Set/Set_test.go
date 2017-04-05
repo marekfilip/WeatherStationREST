@@ -4,19 +4,19 @@ import (
 	"encoding/json"
 	"testing"
 
-	"gopkg.in/mgo.v2/bson"
+	//	"gopkg.in/mgo.v2/bson"
 
 	"filip/WeatherStationREST/Models/Brightness"
 	"filip/WeatherStationREST/Models/Temperature"
 )
 
-var testObjects = GetSetsTestCases()
+var testObjects []Set = GetSetsTestCases()
 
 func TestCreating(t *testing.T) {
 	var object *Set
 	var objectFloatValue float64
 	var expectedFloatValue float64
-	var expected Sets = GetSetsTestCases()
+	var expected []Set = GetSetsTestCases()
 	var err error
 
 	for index, c := range getMapSetsTestCases() {
@@ -76,7 +76,7 @@ func TestMarshalingUnmarshaling(t *testing.T) {
 	var unmarshaled Set
 	var unmarshaledFloatValue float64
 	var expectedFloatValue float64
-	var expected Sets = GetSetsTestCases()
+	var expected []Set = GetSetsTestCases()
 	var err error
 
 	for index, c := range testObjects {
@@ -164,11 +164,11 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestFailSetBSON(t *testing.T) {
+/*func TestFailSetBSON(t *testing.T) {
 	var object Set = Set{}
 	var err error = object.SetBSON(bson.Raw{})
 
 	if err == nil {
 		t.Fatalf("Expected error got none")
 	}
-}
+}*/

@@ -1,16 +1,16 @@
 package Temperature
 
-/*
 import (
 	"net/http"
 	"time"
 
-	tempModel "filip/WeatherStationREST/Models/Temperature"
+	"filip/WeatherStationREST/Models/Temperature/Signed"
+	util "filip/WeatherStationREST/REST/Utilities"
 
 	"github.com/ant0ine/go-json-rest/rest"
 )
 
-func JsonResponse(w rest.ResponseWriter, req *rest.Request) {
+func Range(w rest.ResponseWriter, req *rest.Request) {
 	from := req.PathParam("from")
 	to := req.PathParam("to")
 
@@ -25,14 +25,29 @@ func JsonResponse(w rest.ResponseWriter, req *rest.Request) {
 		rest.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	if util.IsLimitExceeded(fromTime, toTime) {
+		rest.Error(w, "Requested range too long", http.StatusForbidden)
+		return
+	}
+
 	toTime = toTime.Add(time.Duration(24)*time.Hour - time.Nanosecond)
 
-	requestedTemperatures := new(tempModel.Temperatures)
-	err = requestedTemperatures.Find(fromTime, toTime)
+	requestedTemperatureSet, err := Signed.Find(fromTime, toTime)
 	if err != nil {
 		rest.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	w.WriteJson(requestedTemperatures)
-}*/
+	w.WriteJson(requestedTemperatureSet)
+}
+
+func Last(w rest.ResponseWriter, req *rest.Request) {
+	requestedTemperature, err := Signed.GetLast()
+	if err != nil {
+		rest.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteJson(requestedTemperature)
+}

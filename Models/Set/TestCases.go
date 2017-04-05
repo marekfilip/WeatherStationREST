@@ -54,8 +54,8 @@ func getMapSetsTestCases() []map[string]string {
 	}
 }
 
-func GetSetsTestCases() Sets {
-	return Sets{
+func GetSetsTestCases() []Set {
+	return []Set{
 		Set{
 			Brightness:  Brightness.NewBrightness(970),
 			Temperature: Temperature.NewTemperature(-2.123),

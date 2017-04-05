@@ -16,3 +16,7 @@ func GetConnection() *bongo.Connection {
 
 	return instance
 }
+
+func GetSetCollection() *bongo.Collection {
+	return GetConnection().Collection(conf.GetSetCollectionName())
+}

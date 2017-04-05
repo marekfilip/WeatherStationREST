@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	//"filip/WeatherStationREST/REST/Routes/Temperature"
+	"filip/WeatherStationREST/REST/Routes/Brightness"
+	"filip/WeatherStationREST/REST/Routes/Temperature"
 
 	"github.com/ant0ine/go-json-rest/rest"
 )
@@ -63,7 +64,7 @@ func (w *WeatherStationREST) Start() {
 	w.status = StatusRunning
 	log.Println("Server started at port", w.port)
 
-	log.Fatal(http.ListenAndServe(":"+w.port, w.api.MakeHandler()))
+	log.Println(http.ListenAndServe(":"+w.port, w.api.MakeHandler()))
 }
 
 func (w *WeatherStationREST) SetPort(port uint16) {
@@ -104,6 +105,10 @@ func getDefaultProdMiddlewares() []rest.Middleware {
 
 func getRouter() (rest.App, error) {
 	return rest.MakeRouter(
-	//rest.Get("/temperature/get/#from/#to", Temperature.JsonResponse),
+		rest.Get("/temperature/get/last", Temperature.Last),
+		rest.Get("/temperature/get/#from/#to", Temperature.Range),
+
+		rest.Get("/brightness/get/last", Brightness.Last),
+		rest.Get("/brightness/get/#from/#to", Brightness.Range),
 	)
 }

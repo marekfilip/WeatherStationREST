@@ -13,15 +13,15 @@ func TestGetBongoConfig(t *testing.T) {
 func TestGetSetCollectionName(t *testing.T) {
 	environment = "prod"
 
-	if GetSetCollectionName() != PRODUCTION_SET_COLLECTION_NAME {
-		t.Fatalf("Expected '%s', got '%s'", PRODUCTION_SET_COLLECTION_NAME, GetSetCollectionName())
+	if GetSetCollectionName() != productionSetCollectionName {
+		t.Fatalf("Expected '%s', got '%s'", productionSetCollectionName, GetSetCollectionName())
 	}
 }
 
 func TestGetSetTestCollectionName(t *testing.T) {
 	environment = "test"
 
-	if GetSetCollectionName() != TESTING_SET_COLLECTION_NAME {
-		t.Fatalf("Expected '%s', got '%s'", TESTING_SET_COLLECTION_NAME, GetSetCollectionName())
+	if GetSetCollectionName() != testingSetCollectionName {
+		t.Fatalf("Expected '%s', got '%s'", testingSetCollectionName, GetSetCollectionName())
 	}
 }

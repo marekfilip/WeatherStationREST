@@ -13,6 +13,7 @@ import (
 var environment string = os.Getenv("WEATHER_STATION_ENV")
 
 func main() {
+	log.SetOutput(os.Stdout)
 	checkIsEnvironmentSet()
 
 	var device *SerialRead.SerialRead = SerialRead.Init()
@@ -21,25 +22,37 @@ func main() {
 
 	go func() {
 		for {
-			data := device.GetData()
+			<-time.After(time.Duration(15) * time.Second)
+
+			data, err := device.GetData()
 			if err != nil {
-				log.Fatal(err.Error())
+				log.Println(err.Error())
+				continue
 			}
 
 			composition, err := Set.NewFromMap(data)
-			if err != nil {
-				log.Fatal(err.Error())
-				return
+			if err == nil {
+				err = composition.Save()
+
+				if err != nil {
+					log.Println(err.Error())
+				}
+			} else {
+				log.Printf(
+					"Error when creating set\n\tError: %s\n\tData: %v\n",
+					err.Error(),
+					data,
+				)
 			}
 
-			composition.Save()
 			<-time.After(time.Duration(2) * time.Minute)
 		}
 	}()
 
 	rest, err = REST.New(REST.DevStack)
 	if err != nil {
-		log.Fatal(err.Error())
+		log.SetOutput(os.Stderr)
+		log.Fatalln(err.Error())
 	}
 
 	rest.Start()
@@ -47,7 +60,6 @@ func main() {
 
 func checkIsEnvironmentSet() {
 	if environment == "" {
-		log.Println("Set environment in WEATHER_STATION_ENV")
-		os.Exit(1)
+		log.Fatalln("Set environment in WEATHER_STATION_ENV")
 	}
 }
