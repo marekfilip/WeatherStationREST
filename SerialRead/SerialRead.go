@@ -164,13 +164,11 @@ func (sr *SerialRead) sendSignal() {
 	var err error
 
 	for bytesSend == 0 {
-		sr.Lock()
 		bytesSend, err = sr.deviceFile.Write([]byte("a"))
 
 		if err != nil {
 			sr.catchErrorAndExitCustomMessage("Could not send signal.", err)
 		}
-		sr.Unlock()
 	}
 }
 
@@ -179,10 +177,13 @@ func (sr *SerialRead) readData() []byte {
 	var buffer []byte
 
 	for byteCount < 8 {
-		sr.sendSignal()
 		sr.Lock()
+
+		sr.sendSignal()
+		<-time.After(time.Duration(200) * time.Millisecond)
 		buffer = make([]byte, 16)
 		byteCount, _ = sr.deviceFile.Read(buffer)
+
 		sr.Unlock()
 	}
 
@@ -194,6 +195,5 @@ func (sr *SerialRead) Lock() {
 }
 
 func (sr *SerialRead) Unlock() {
-	<-time.After(time.Duration(60) * time.Millisecond)
 	sr.mutex.Unlock()
 }

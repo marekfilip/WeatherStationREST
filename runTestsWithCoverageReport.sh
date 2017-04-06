@@ -1,3 +1,5 @@
+#!/bin/bash
+
 export WEATHER_STATION_ENV="test"
 for i in $(go list ./...); do
 	go test -cover -coverprofile=coverage.out $i
