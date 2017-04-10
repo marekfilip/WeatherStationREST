@@ -2,13 +2,12 @@ package SerialRead
 
 import (
 	"bufio"
-	"fmt"
+	"filip/tracer"
 	"io"
 	"log"
 	"os"
 	"os/exec"
 	"regexp"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -20,10 +19,11 @@ type SerialRead struct {
 	deviceName string
 	devicePath string
 	mutex      *sync.Mutex
+	tracer     tracer.Tracer
 }
 
 func Init() *SerialRead {
-	var sr SerialRead = SerialRead{mutex: &sync.Mutex{}}
+	var sr SerialRead = SerialRead{mutex: &sync.Mutex{}, tracer: tracer.Off()}
 	sr.deviceName = sr.getUSBSerialDevice()
 	sr.devicePath = "/dev/" + sr.deviceName
 
@@ -119,44 +119,13 @@ func (sr *SerialRead) getUSBSerialDevice() string {
 
 func (sr *SerialRead) catchErrorAndExitCustomMessage(msg string, err error) {
 	if err != nil {
-		log.SetOutput(os.Stderr)
 		log.Println(msg)
-		log.Println(err.Error())
-		os.Exit(1)
+		log.Fatalln(err.Error())
 	}
 }
 
 func (sr *SerialRead) catchErrorAndExit(err error) {
 	sr.catchErrorAndExitCustomMessage("Could not start. Is device connected?", err)
-}
-
-func (sr *SerialRead) GetData() (map[string]string, error) {
-	var output map[string]string = map[string]string{}
-
-	tries := 0
-	for {
-		var data string = string(sr.readData())
-		var splitedData = strings.Split(data, ";")
-
-		for _, value := range splitedData {
-			tmp := strings.Split(strings.TrimSpace(value), ":")
-
-			if len(tmp) == 2 {
-				output[tmp[0]] = tmp[1]
-			}
-		}
-
-		if output["T"] != "-273.15" && output["B"] != "" {
-			break
-		}
-
-		tries++
-		if tries >= 3 {
-			return nil, fmt.Errorf("Tries count too hi")
-		}
-	}
-
-	return output, nil
 }
 
 func (sr *SerialRead) sendSignal() {
@@ -172,28 +141,34 @@ func (sr *SerialRead) sendSignal() {
 	}
 }
 
-func (sr *SerialRead) readData() []byte {
+func (sr *SerialRead) ReadData() []byte {
 	var byteCount int = 0
 	var buffer []byte
 
 	for byteCount < 8 {
-		sr.Lock()
+		sr.lock()
 
 		sr.sendSignal()
 		<-time.After(time.Duration(200) * time.Millisecond)
 		buffer = make([]byte, 16)
 		byteCount, _ = sr.deviceFile.Read(buffer)
 
-		sr.Unlock()
+		sr.tracer.Trace("[", time.Now().Format("02-01-06 15:04:05"), "]", " Bytes read: ", byteCount, " Content: ", string(buffer))
+
+		sr.unlock()
 	}
 
 	return buffer
 }
 
-func (sr *SerialRead) Lock() {
+func (sr *SerialRead) SetTracer(t tracer.Tracer) {
+	sr.tracer = t
+}
+
+func (sr *SerialRead) lock() {
 	sr.mutex.Lock()
 }
 
-func (sr *SerialRead) Unlock() {
+func (sr *SerialRead) unlock() {
 	sr.mutex.Unlock()
 }
